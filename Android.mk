@@ -35,7 +35,7 @@ include $(CLEAR_VARS)
 LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
 LOCAL_SHARED_LIBRARIES := liblog libcutils
-LOCAL_SRC_FILES := sensors.c  hwmsen_chip_info.c nusensors.cpp InputEventReader.cpp SensorBase.cpp Hwmsen.cpp Acceleration.cpp Magnetic.cpp sensordebug.cpp
+LOCAL_SRC_FILES := sensors.c  hwmsen_chip_info.c nusensors.cpp InputEventReader.cpp SensorBase.cpp Hwmsen.cpp Acceleration.cpp Gyroscope.cpp Magnetic.cpp sensordebug.cpp
 #LOCAL_SRC_FILES := sensors_hwmsen.c  hwmsen_chip_info.c
 LOCAL_C_INCLUDES+= \
         $(MTK_PATH_SOURCE)/hardware/sensor/ \

@@ -75,6 +75,11 @@ int init_nusensors(hw_module_t const* module, hw_device_t** device);
 #define EVENT_TYPE_ROLL             ABS_RZ
 #define EVENT_TYPE_ORIENT_STATUS    ABS_RUDDER
 
+#define EVENT_TYPE_GYRO_X          				ABS_X
+#define EVENT_TYPE_GYRO_Y          				ABS_Y
+#define EVENT_TYPE_GYRO_Z          				ABS_Z
+#define EVENT_TYPE_GYRO_STATUS     			ABS_WHEEL
+
 #define EVENT_TYPE_MAGV_X           ABS_HAT0X
 #define EVENT_TYPE_MAGV_Y           ABS_HAT0Y
 #define EVENT_TYPE_MAGV_Z           ABS_BRAKE

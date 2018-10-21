@@ -33,6 +33,7 @@
 #include "Hwmsen.h"
 #include "Acceleration.h"
 #include "Magnetic.h"
+#include "Gyroscope.h"
 #undef NDEBUG
 
 
@@ -52,7 +53,7 @@ private:
         hwmsen        = 0, 
         accel,
         magnetic,
-        //gyro,
+        gyro,
         //light,
         //proximity,
         //pressure,
@@ -72,8 +73,8 @@ private:
             case ID_LIGHT:
 				 //return light;
             case ID_GYROSCOPE:
-				 //return gyro;
-			case ID_PRESSURE:
+                 return gyro;
+            case ID_PRESSURE:
              case ID_STEP_COUNTER:
 	     case ID_TEMPRERATURE:
 		case ID_RELATIVE_HUMIDITY:
@@ -108,6 +109,11 @@ sensors_poll_context_t::sensors_poll_context_t()
     mPollFds[magnetic].fd = ((MagneticSensor*)mSensors[magnetic])->mdata_fd;
     mPollFds[magnetic].events = POLLIN;
     mPollFds[magnetic].revents = 0;
+
+    mSensors[gyro] = new GyroscopeSensor();
+    mPollFds[gyro].fd = ((GyroscopeSensor*)mSensors[gyro])->mdata_fd;
+    mPollFds[gyro].events = POLLIN;
+    mPollFds[gyro].revents = 0;
 
     int wakeFds[2];
     int result = pipe(wakeFds);
