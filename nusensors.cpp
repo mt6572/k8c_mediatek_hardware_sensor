@@ -34,7 +34,8 @@
 #include "Acceleration.h"
 #include "Magnetic.h"
 #include "Gyroscope.h"
-#undef NDEBUG
+#include "StepCounter.h"
+#include "Pedometer.h"
 
 
 /*****************************************************************************/
@@ -54,6 +55,8 @@ private:
         accel,
         magnetic,
         gyro,
+        stepcounter,
+        pedometer,
         //light,
         //proximity,
         //pressure,
@@ -61,25 +64,30 @@ private:
         numFds,
     };
 
-	int handleToDriver(int handle) const {
+    int handleToDriver(int handle) const {
         switch (handle) {
             case ID_ACCELEROMETER:
-				 return accel;
+                 return accel;
             case ID_MAGNETIC:
             case ID_ORIENTATION:
-				 return magnetic;
+                 return magnetic;
             case ID_PROXIMITY:
-				 //return proximity;
+                 //return proximity;
             case ID_LIGHT:
-				 //return light;
+                 //return light;
             case ID_GYROSCOPE:
                  return gyro;
             case ID_PRESSURE:
              case ID_STEP_COUNTER:
-	     case ID_TEMPRERATURE:
-		case ID_RELATIVE_HUMIDITY:
-				 break;
-				 //return pressure;
+        case ID_STEP_DETECTOR:
+        case ID_SIGNIFICANT_MOTION:
+                 return stepcounter;
+        case ID_PEDOMETER:
+                 return pedometer;
+         case ID_TEMPRERATURE:
+        case ID_RELATIVE_HUMIDITY:
+                 break;
+                 //return pressure;
         }
         return -EINVAL;
     }
@@ -100,12 +108,12 @@ sensors_poll_context_t::sensors_poll_context_t()
     mPollFds[hwmsen].events = POLLIN;
     mPollFds[hwmsen].revents = 0;
 
-	mSensors[accel] = new AccelerationSensor();
+    mSensors[accel] = new AccelerationSensor();
     mPollFds[accel].fd = ((AccelerationSensor*)mSensors[accel])->mdata_fd;
     mPollFds[accel].events = POLLIN;
     mPollFds[accel].revents = 0;
 
-	mSensors[magnetic] = new MagneticSensor();
+    mSensors[magnetic] = new MagneticSensor();
     mPollFds[magnetic].fd = ((MagneticSensor*)mSensors[magnetic])->mdata_fd;
     mPollFds[magnetic].events = POLLIN;
     mPollFds[magnetic].revents = 0;
@@ -114,6 +122,17 @@ sensors_poll_context_t::sensors_poll_context_t()
     mPollFds[gyro].fd = ((GyroscopeSensor*)mSensors[gyro])->mdata_fd;
     mPollFds[gyro].events = POLLIN;
     mPollFds[gyro].revents = 0;
+
+    mSensors[stepcounter] = new StepCounterSensor();
+    mPollFds[stepcounter].fd = ((StepCounterSensor*)mSensors[stepcounter])->mdata_fd;
+    mPollFds[stepcounter].events = POLLIN;
+    mPollFds[stepcounter].revents = 0;
+
+    mSensors[pedometer] = new PedometerSensor();
+    mPollFds[pedometer].fd = ((PedometerSensor*)mSensors[pedometer])->mdata_fd;
+    mPollFds[pedometer].events = POLLIN;
+    mPollFds[pedometer].revents = 0;
+
 
     int wakeFds[2];
     int result = pipe(wakeFds);
@@ -137,32 +156,32 @@ sensors_poll_context_t::~sensors_poll_context_t() {
 
 int sensors_poll_context_t::activate(int handle, int enabled) 
 {
-	ALOGD( "activate handle =%d, enable = %d",handle, enabled );
-	int err=0;
-	
-	int index = handleToDriver(handle);
+    ALOGD( "activate handle =%d, enable = %d",handle, enabled );
+    int err=0;
+    
+    int index = handleToDriver(handle);
 
-	//
-	if(ID_ORIENTATION == handle)
-	{
-	     //ALOGD( "fwq1111" );
-		((AccelerationSensor*)(mSensors[accel]))->enableNoHALDataAcc(enabled);
-		((Hwmsen*)(mSensors[hwmsen]))->enableNoHALDataAcc(enabled);
-	}
-	
-	if(NULL != mSensors[index] && index >0 )
-	{
-	   ALOGD( "use new sensor index=%d, mSensors[index](%x)", index, mSensors[index]);
-	   err =  mSensors[index]->enable(handle, enabled);
-	}
-	
-	if(err || index<0 )
-	{
-  		ALOGD("use old sensor err(%d),index(%d) go to old hwmsen\n",err,index);
-		// notify to hwmsen sensor to support old architecture
-		err =  mSensors[hwmsen]->enable(handle, enabled);
-	}
-	
+    //
+    if(ID_ORIENTATION == handle)
+    {
+         //ALOGD( "fwq1111" );
+        ((AccelerationSensor*)(mSensors[accel]))->enableNoHALDataAcc(enabled);
+        ((Hwmsen*)(mSensors[hwmsen]))->enableNoHALDataAcc(enabled);
+    }
+    
+    if(NULL != mSensors[index] && index >0 )
+    {
+       ALOGD( "use new sensor index=%d, mSensors[index](%x)", index, mSensors[index]);
+       err =  mSensors[index]->enable(handle, enabled);
+    }
+    
+    if(err || index<0 )
+    {
+        ALOGD("use old sensor err(%d),index(%d) go to old hwmsen\n",err,index);
+        // notify to hwmsen sensor to support old architecture
+        err =  mSensors[hwmsen]->enable(handle, enabled);
+    }
+    
     if (enabled && !err) {
         const char wakeMessage(WAKE_MESSAGE);
         int result = write(mWritePipeFd, &wakeMessage, 1);
@@ -175,20 +194,20 @@ int sensors_poll_context_t::setDelay(int handle, int64_t ns)
 {
 
     int err =0;
-	
-	
+    
+    
     int index = handleToDriver(handle);
-	if(NULL != mSensors[index] && index >0)
-	{
-	   err = mSensors[index]->setDelay(handle, ns);
-	   
-	}
-	if(err || index<0)
-	{
-		ALOGE("new acc setDelay handle(%d),ns(%lld) err! go to hwmsen\n",handle,ns);
-		// notify to hwmsen sensor to support old architecture
-	 	err = mSensors[hwmsen]->setDelay(handle, ns);
-	}
+    if(NULL != mSensors[index] && index >0)
+    {
+       err = mSensors[index]->setDelay(handle, ns);
+       
+    }
+    if(err || index<0)
+    {
+        ALOGE("new acc setDelay handle(%d),ns(%lld) err! go to hwmsen\n",handle,ns);
+        // notify to hwmsen sensor to support old architecture
+        err = mSensors[hwmsen]->setDelay(handle, ns);
+    }
     return err;
 }
 
@@ -196,7 +215,7 @@ int sensors_poll_context_t::pollEvents(sensors_event_t* data, int count)
 {
     int nbEvents = 0;
     int n = 0;
-	ALOGE("pollEvents count =%d",count );
+    ALOGE("pollEvents count =%d",count );
 
     do {
         // see if we have some leftover from the last poll()
@@ -204,17 +223,27 @@ int sensors_poll_context_t::pollEvents(sensors_event_t* data, int count)
             SensorBase* const sensor(mSensors[i]);
             if ((mPollFds[i].revents & POLLIN) || (sensor->hasPendingEvents())) {
                 int nb = sensor->readEvents(data, count);
+                
+            if (data->type == SENSOR_TYPE_PEDOMETER) {
+                ALOGD("pollEvents pedometer buffer data[0]:%f data[1]:%f data[2]:%f data[3]:%f ", 
+                        data->data[0], data->data[1], data->data[2], data->data[3]);
+            }
+            if (data->type == SENSOR_TYPE_SIGNIFICANT_MOTION) {
+                ALOGD("pollEvents significant buffer data[0]:%f ", 
+                        data->data[0], data->data[1], data->data[2], data->data[3]);
+            }
+
                 if (nb < count) {
                     // no more data for this sensor
                     mPollFds[i].revents = 0;
                 }
                 //if(nb < 0||nb > count)
-                //	ALOGE("pollEvents count error nb:%d, count:%d, nbEvents:%d", nb, count, nbEvents);//for sensor NE debug
+                //  ALOGE("pollEvents count error nb:%d, count:%d, nbEvents:%d", nb, count, nbEvents);//for sensor NE debug
                 count -= nb;
                 nbEvents += nb;
                 data += nb;
                 //if(nb < 0||nb > count)
-                //	ALOGE("pollEvents count error nb:%d, count:%d, nbEvents:%d", nb, count, nbEvents);//for sensor NE debug
+                //  ALOGE("pollEvents count error nb:%d, count:%d, nbEvents:%d", nb, count, nbEvents);//for sensor NE debug
             }
         }
 
@@ -238,8 +267,8 @@ int sensors_poll_context_t::pollEvents(sensors_event_t* data, int count)
             }
         }
 
-		
-		
+        
+        
         // if we have events and space, go read them
     } while (n && count);
 

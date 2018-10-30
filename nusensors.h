@@ -24,6 +24,8 @@
 
 #include <linux/input.h>
 
+#include <linux/hwmsensor.h> 
+
 #include <hardware/hardware.h>
 #include <hardware/sensors.h>
 
@@ -89,6 +91,10 @@ int init_nusensors(hw_module_t const* module, hw_device_t** device);
 #define EVENT_TYPE_PROXIMITY        ABS_DISTANCE
 #define EVENT_TYPE_LIGHT            ABS_MISC
 
+#define EVENT_TYPE_STEP_COUNTER_VALUE          	ABS_X
+#define EVENT_TYPE_STEP_DETECTOR_VALUE          REL_Y
+#define EVENT_TYPE_SIGNIFICANT_VALUE            REL_Z
+#define EVENT_TYPE_STEP_COUNT       			ABS_GAS
 // 720 LSG = 1G
 #define LSG                         (720.0f)
 
